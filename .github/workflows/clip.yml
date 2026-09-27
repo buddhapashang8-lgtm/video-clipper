@@ -22,11 +22,11 @@ jobs:
           
           echo "Processing URL: $VIDEO_URL"
           
-          # Agar direct video file ka link hai (Upload ki hui file)
+          # Check karna ki kya ye direct uploaded file hai ya koi web link
           if [[ "$VIDEO_URL" == *".mp4"* || "$VIDEO_URL" == *".mov"* || "$VIDEO_URL" == *"flowai-assets"* || "$VIDEO_URL" == *"amazonaws"* ]]; then
             ffmpeg -ss "$START_TIME" -i "$VIDEO_URL" -t "$DURATION" -c:v libx264 -c:a aac -strict -2 output_short.mp4
           else
-            # Agar YouTube ya koi aur social web link hai
+            # Agar YouTube, Instagram, Facebook, ya koi aur social link hai
             yt-dlp -g "$VIDEO_URL" > links.txt
             VIDEO_STREAM=$(sed -n '1p' links.txt)
             ffmpeg -ss "$START_TIME" -i "$VIDEO_STREAM" -t "$DURATION" -c:v libx264 -c:a aac -strict -2 output_short.mp4
@@ -34,11 +34,9 @@ jobs:
 
       - name: Upload Clipped Video & Generate Download Link
         run: |
-          # Video ko transfer.sh par upload karke 14 din ke liye free link banana
+          # 14 din ke liye free cloud link banana
           DOWNLOAD_URL=$(curl --upload-file ./output_short.mp4 https://transfer.sh)
           echo "--------------------------------------------------"
           echo "YOUR SHORT VIDEO IS READY DOWNLOAD HERE:"
           echo "$DOWNLOAD_URL"
-          echo "--------------------------------------------------"
-          
-          # Tip: GitHub ke workflow
+          echo "---------------------
