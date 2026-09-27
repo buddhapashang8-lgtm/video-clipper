@@ -1,4 +1,4 @@
-yamlname: Video Clipper Bot
+yamlname: Universal Video Clipper
 
 on:
   repository_dispatch:
@@ -8,19 +8,37 @@ jobs:
   clip:
     runs-on: ubuntu-latest
     steps:
-      - name: Install yt-dlp and ffmpeg
+      - name: Install Tools (yt-dlp & ffmpeg)
         run: |
           sudo wget https://github.com -O /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
-          sudo apt-get update && sudo apt-get install -y ffmpeg
+          sudo apt-get update && sudo apt-get install -y ffmpeg curl
 
-      - name: Download and Clip Video
+      - name: Process Video Link or Uploaded File
         run: |
           VIDEO_URL="${{ github.event.client_payload.video_url }}"
           START_TIME="${{ github.event.client_payload.start_time }}"
           DURATION="${{ github.event.client_payload.duration }}"
           
-          yt-dlp -g "$VIDEO_URL" > links.txt
-          VIDEO_STREAM=$(sed -n '1p' links.txt)
+          echo "Processing URL: $VIDEO_URL"
           
-          ffmpeg -ss "$START_TIME" 
+          # Agar direct video file ka link hai (Upload ki hui file)
+          if [[ "$VIDEO_URL" == *".mp4"* || "$VIDEO_URL" == *".mov"* || "$VIDEO_URL" == *"flowai-assets"* || "$VIDEO_URL" == *"amazonaws"* ]]; then
+            ffmpeg -ss "$START_TIME" -i "$VIDEO_URL" -t "$DURATION" -c:v libx264 -c:a aac -strict -2 output_short.mp4
+          else
+            # Agar YouTube ya koi aur social web link hai
+            yt-dlp -g "$VIDEO_URL" > links.txt
+            VIDEO_STREAM=$(sed -n '1p' links.txt)
+            ffmpeg -ss "$START_TIME" -i "$VIDEO_STREAM" -t "$DURATION" -c:v libx264 -c:a aac -strict -2 output_short.mp4
+          fi
+
+      - name: Upload Clipped Video & Generate Download Link
+        run: |
+          # Video ko transfer.sh par upload karke 14 din ke liye free link banana
+          DOWNLOAD_URL=$(curl --upload-file ./output_short.mp4 https://transfer.sh)
+          echo "--------------------------------------------------"
+          echo "YOUR SHORT VIDEO IS READY DOWNLOAD HERE:"
+          echo "$DOWNLOAD_URL"
+          echo "--------------------------------------------------"
+          
+          # Tip: GitHub ke workflow
