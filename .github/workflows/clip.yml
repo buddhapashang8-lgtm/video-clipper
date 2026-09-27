@@ -1,0 +1,26 @@
+yamlname: Video Clipper Bot
+
+on:
+  repository_dispatch:
+    types: [clip_video]
+
+jobs:
+  clip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install yt-dlp and ffmpeg
+        run: |
+          sudo wget https://github.com -O /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Download and Clip Video
+        run: |
+          VIDEO_URL="${{ github.event.client_payload.video_url }}"
+          START_TIME="${{ github.event.client_payload.start_time }}"
+          DURATION="${{ github.event.client_payload.duration }}"
+          
+          yt-dlp -g "$VIDEO_URL" > links.txt
+          VIDEO_STREAM=$(sed -n '1p' links.txt)
+          
+          ffmpeg -ss "$START_TIME" 
